@@ -1,0 +1,49 @@
+# Copy this to judges.local.yaml and edit. judges.local.yaml is gitignored so
+# your keys and your exact panel never land in the repo.
+#
+# A judge is a name + an OpenAI-compatible /chat/completions endpoint + a model.
+# api_key_env names the environment variable holding the key; omit it for a
+# local server that doesn't need one. Mix local and hosted freely, more variety
+# in the panel is worth more than more judges.
+
+judges:
+  # Local models via Ollama / llama.cpp / LM Studio (no key needed).
+  - name: local-a
+    base_url: http://localhost:11434/v1
+    model: qwen2.5:32b
+
+  - name: local-b
+    base_url: http://localhost:8080/v1
+    model: llama-3.3-70b
+
+  # Hosted, OpenAI-compatible providers. Set the env vars before running.
+  - name: groq
+    base_url: https://api.groq.com/openai/v1
+    model: llama-3.3-70b-versatile
+    api_key_env: GROQ_API_KEY
+
+  - name: mistral
+    base_url: https://api.mistral.ai/v1
+    model: mistral-large-latest
+    api_key_env: MISTRAL_API_KEY
+
+  - name: perplexity
+    base_url: https://api.perplexity.ai
+    model: sonar-pro
+    api_key_env: PERPLEXITY_API_KEY
+
+  # Anthropic exposes an OpenAI-compatible endpoint at /v1/chat/completions.
+  - name: claude
+    base_url: https://api.anthropic.com/v1
+    model: claude-sonnet-4-5
+    api_key_env: ANTHROPIC_API_KEY
+
+  # Any other OpenAI-compatible endpoint drops in the same way.
+  # - name: sol
+  #   base_url: https://your-endpoint/v1
+  #   model: your-model
+  #   api_key_env: SOL_API_KEY
+
+arbiter: claude          # only used to break conflicts; pick your strictest
+pass_rule: majority      # "majority" | "unanimous" | "k=2"
+min_voters: 2            # fewer real votes than this -> pair stays pending

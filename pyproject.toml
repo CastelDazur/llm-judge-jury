@@ -1,0 +1,26 @@
+[project]
+name = "llm-judge-jury"
+version = "0.1.0"
+description = "Score instruction/response pairs with a jury of independent LLM judges and keep the consensus."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "CastelDazur" }]
+keywords = ["llm", "dataset", "sft", "data-quality", "llm-as-judge", "local-ai"]
+dependencies = [
+    "requests>=2.28",
+    "pyyaml>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/CastelDazur/llm-judge-jury"
+
+[project.scripts]
+judge-jury = "judge_jury.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["judge_jury"]

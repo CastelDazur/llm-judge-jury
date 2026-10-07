@@ -62,6 +62,8 @@ Run the jury over a JSONL file of pairs:
 judge-jury run examples/code_review_pairs.jsonl --judges judges.yaml --out verdicts.jsonl
 ```
 
+If the run stops halfway (a crash, a closed laptop, a judge stuck on rate limits), run the same command again. Pairs that already got a verdict in `verdicts.jsonl` are kept and skipped; pairs left `pending` by judge errors are judged again. Add `--fresh` to ignore the file and start over.
+
 Then look at what happened:
 
 ```bash

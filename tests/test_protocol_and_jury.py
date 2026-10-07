@@ -64,3 +64,32 @@ def test_full_run_on_examples():
     # The bundled set is built to produce both passes and fails.
     assert any(r.outcome == "pass" for r in results)
     assert any(r.outcome == "fail" for r in results)
+
+
+def test_run_resumes_from_existing_out(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+
+    from judge_jury import cli
+
+    monkeypatch.setattr(cli, "_load_judges", lambda path: (*demo_jury(), "majority", 2))
+    seen = []
+    real_run = cli.run_jury
+    monkeypatch.setattr(cli, "run_jury", lambda pairs, *a, **k: seen.append(len(pairs)) or real_run(pairs, *a, **k))
+
+    pairs = Path(__file__).resolve().parent.parent / "examples" / "code_review_pairs.jsonl"
+    out = tmp_path / "verdicts.jsonl"
+    cli.main(["run", str(pairs), "--judges", "x.yaml", "--out", str(out)])
+    lines = out.read_text(encoding="utf-8").splitlines()
+    total = len(lines)
+
+    # Simulate a crash after 5 pairs: the second run only judges the rest.
+    out.write_text("\n".join(lines[:5]) + "\n", encoding="utf-8")
+    cli.main(["run", str(pairs), "--judges", "x.yaml", "--out", str(out)])
+    assert seen == [total, total - 5]
+    ids = [json.loads(l)["pair_id"] for l in out.read_text(encoding="utf-8").splitlines()]
+    assert len(ids) == total and len(set(ids)) == total
+
+    # --fresh ignores the file and judges everything again.
+    cli.main(["run", str(pairs), "--judges", "x.yaml", "--out", str(out), "--fresh"])
+    assert seen[-1] == total

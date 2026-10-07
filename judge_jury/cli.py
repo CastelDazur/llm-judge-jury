@@ -43,10 +43,36 @@ def _load_judges(path: str) -> tuple[list[Judge], Judge | None, str, int]:
     return judges, arbiter, cfg.get("pass_rule", "majority"), int(cfg.get("min_voters", 2))
 
 
+FINISHED = ("pass", "fail", "conflict")
+
+
+def _finished_rows(path: str) -> list[dict[str, Any]]:
+    """Rows of an earlier run that reached a verdict. Pending rows (judge errors) are judged again."""
+    if not Path(path).exists():
+        return []
+    return [row for row in _read_jsonl(path) if row.get("outcome") in FINISHED]
+
+
 def _cmd_run(args: argparse.Namespace) -> int:
     pairs = _read_jsonl(args.pairs)
     judges, arbiter, pass_rule, min_voters = _load_judges(args.judges)
-    out = open(args.out, "w", encoding="utf-8") if args.out else None
+
+    kept: list[dict[str, Any]] = []
+    if args.out and not args.fresh:
+        kept = _finished_rows(args.out)
+        done = {str(row.get("pair_id")) for row in kept}
+        todo = [p for i, p in enumerate(pairs) if str(p.get("id", i)) not in done]
+        if kept:
+            print(f"resuming: {len(kept)} pairs already judged in {args.out}, "
+                  f"{len(todo)} left (use --fresh to start over)", file=sys.stderr)
+        pairs = todo
+
+    out = None
+    if args.out:
+        out = open(args.out, "w", encoding="utf-8")
+        for row in kept:
+            out.write(json.dumps(row, ensure_ascii=False) + "\n")
+        out.flush()
 
     def sink(r: PairResult) -> None:
         print(f"  {r.pair_id:>8}  {r.outcome:<9} ({r.n_pass}p/{r.n_fail}f/{r.n_error}e)", file=sys.stderr)
@@ -60,7 +86,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                        min_voters=min_voters, on_result=sink)
     if out:
         out.close()
-    _print_report(results)
+    _print_report([_result_from_dict(row) for row in kept] + results)
     return 0
 
 
@@ -138,7 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("run", help="judge a JSONL file of pairs")
     r.add_argument("pairs")
     r.add_argument("--judges", required=True, help="judges.yaml")
-    r.add_argument("--out", help="write per-pair verdicts here (JSONL)")
+    r.add_argument("--out", help="write per-pair verdicts here (JSONL); an existing file is resumed")
+    r.add_argument("--fresh", action="store_true", help="ignore an existing --out file and judge everything again")
     r.set_defaults(func=_cmd_run)
 
     d = sub.add_parser("demo", help="run offline with mock judges (no network)")

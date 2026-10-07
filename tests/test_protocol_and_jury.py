@@ -93,3 +93,16 @@ def test_run_resumes_from_existing_out(tmp_path, monkeypatch):
     # --fresh ignores the file and judges everything again.
     cli.main(["run", str(pairs), "--judges", "x.yaml", "--out", str(out), "--fresh"])
     assert seen[-1] == total
+
+
+def test_report_on_real_run(capsys):
+    from pathlib import Path
+    from judge_jury.cli import main
+
+    verdicts = Path(__file__).resolve().parent.parent / "examples" / "real_run_verdicts.jsonl"
+    assert main(["report", str(verdicts)]) == 0
+    out = capsys.readouterr().out
+    assert "16 pairs · 4 judges" in out
+    assert "pass         10" in out and "fail          6" in out
+    # all four judges have the same fail rate, so none is labelled strictest/softest
+    assert "strictest" not in out and "softest" not in out

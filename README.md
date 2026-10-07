@@ -70,6 +70,8 @@ Then look at what happened:
 judge-jury report verdicts.jsonl
 ```
 
+Example output, made-up numbers to show the format of a large run:
+
 ```
 1000 pairs · 3 judges + arbiter
   pass       684
@@ -88,6 +90,26 @@ inter-judge agreement
   local-b             (fail rate 0.19)
   local-c  softest    (fail rate 0.11)
 ```
+
+## A real run
+
+The 16 pairs in `examples/code_review_pairs.jsonl` were judged by four hosted judges from different model families: Mistral, Gemini, Llama and GLM. Six of the responses have a planted defect: average of an empty list, two stubs, a duplicate check that only compares neighbours and runs off the end, a revenue query with no `GROUP BY`, and a debounce that never clears its timer. The other ten are correct.
+
+```
+16 pairs · 4 judges
+  pass         10
+  fail          6
+  conflict      0
+  pending       0
+
+inter-judge agreement
+  mistral                   (fail rate 0.38, 0 errors)
+  gemini                    (fail rate 0.38, 0 errors)
+  llama                     (fail rate 0.38, 0 errors)
+  glm                       (fail rate 0.38, 0 errors)
+```
+
+All six defects failed and all ten correct answers passed, every one by a unanimous 4–0 vote. That is a small and easy set, so it shows the plumbing works end to end, not how the jury does on hard cases. The raw verdicts are in `examples/real_run_verdicts.jsonl`; `judge-jury report examples/real_run_verdicts.jsonl` prints the summary above.
 
 ## Input format
 

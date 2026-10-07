@@ -150,10 +150,11 @@ def _print_report(results: list[PairResult]) -> None:
     stats = judge_stats(results)
     if stats:
         print("\ninter-judge agreement")
-        strict = stats[0].name if stats else ""
-        soft = stats[-1].name if stats else ""
+        differ = len(stats) > 1 and stats[0].fail_rate > stats[-1].fail_rate
+        strict = stats[0].name if differ else ""
+        soft = stats[-1].name if differ else ""
         for s in stats:
-            tag = "strictest" if s.name == strict and len(stats) > 1 else ("softest" if s.name == soft and len(stats) > 1 else "")
+            tag = "strictest" if s.name == strict else ("softest" if s.name == soft else "")
             print(f"  {s.name:<14} {tag:<10} (fail rate {s.fail_rate:.2f}, {s.errored} errors)")
 
 
